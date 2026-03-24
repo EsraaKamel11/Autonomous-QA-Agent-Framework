@@ -1,0 +1,84 @@
+name: Autonomous QA Agent
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: qa-agent-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa-agent:
+    runs-on: ubuntu-latest
+
+    services:
+      chromadb:
+        image: chromadb/chroma:latest
+        ports:
+          - "8000:8000"
+        options: >-
+          --health-cmd "curl -f http://localhost:8000/api/v1/heartbeat || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # Full history for accurate diff analysis
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Run QA Agent Pipeline
+        env:
+          # Vocareum OpenAI proxy (maps to OPENAI_API_KEY / OPENAI_BASE_URL
+          # inside the nodes via explicit api_key/base_url parameters)
+          VOCAREUM_API_KEY: ${{ secrets.VOC_API_KEY }}
+          VOCAREUM_BASE_URL: https://openai.vocareum.com/v1
+          # LangSmith tracing (optional — pipeline runs without this)
+          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+          LANGCHAIN_PROJECT: qa-agent-ci
+          # GitHub integration
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USE_LIVE_GITHUB: "true"
+          # Jira integration (optional)
+          USE_LIVE_JIRA: "false"
+          JIRA_SERVER: ${{ secrets.JIRA_SERVER }}
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT: QA
+          # ChromaDB (service container above)
+          CHROMA_HOST: localhost
+          CHROMA_PORT: "8000"
+          # PR context injected by Actions
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_DESCRIPTION: ${{ github.event.pull_request.body }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python main.py \
+            --repo "${{ github.repository }}" \
+            --pr   "${{ github.event.pull_request.number }}"
+
+      - name: Upload QA Agent artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-agent-logs-pr${{ github.event.pull_request.number }}
+          retention-days: 30
+          path: |
+            logs/
+            checkpoints/
+            generated_tests/

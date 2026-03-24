@@ -1,0 +1,36 @@
+# ── LangGraph / LangChain ─────────────────────────────────────────────────────
+langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=0.1.0
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-core>=0.3.0
+
+# ── LLM / OpenAI ─────────────────────────────────────────────────────────────
+openai>=1.40.0
+
+# ── Vector memory ─────────────────────────────────────────────────────────────
+chromadb>=0.5.0
+
+# ── Data validation ───────────────────────────────────────────────────────────
+pydantic>=2.0.0
+pydantic-core>=2.0.0
+
+# ── Test execution ────────────────────────────────────────────────────────────
+pytest>=8.0.0
+pytest-json-report>=1.5.0
+playwright>=1.45.0
+
+# ── GitHub / Jira integration ─────────────────────────────────────────────────
+PyGithub>=2.3.0
+jira>=3.8.0
+
+# ── OpenAPI spec parsing ──────────────────────────────────────────────────────
+openapi-spec-validator>=0.7.0
+PyYAML>=6.0.0
+
+# ── Observability ─────────────────────────────────────────────────────────────
+langsmith>=0.1.0
+
+# ── Environment / CLI ─────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+typing-extensions>=4.0.0
